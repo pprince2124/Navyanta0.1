@@ -1,0 +1,80 @@
+/* ---------------------------
+   Google Fonts
+---------------------------- */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@100..900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Playwrite+DE+SAS:wght@100..400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Lobster+Two:wght@400;700&display=swap');
+
+/* ---------------------------
+   Tailwind Layers
+---------------------------- */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ---------------------------
+   Global Defaults
+---------------------------- */
+body {
+  font-family: 'Outfit', sans-serif;
+  @apply bg-[#0f0f0f] text-brandText;
+}
+
+/* Accent font for branding */
+.brand-cursive {
+  font-family: 'Lobster Two', cursive;
+}
+
+/* Active nav underline */
+.active hr {
+  @apply block;
+}
+
+/* Mobile active nav item */
+@media (max-width:740px) {
+  .active p {
+    @apply text-white bg-primary;
+  }
+}
+
+/* ---------------------------
+   Scrollbar Hide
+---------------------------- */
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+.scrollbar-hide {
+  -ms-overflow-style: none;  /* IE and Edge */
+  scrollbar-width: none;     /* Firefox */
+}
+
+/* ---------------------------
+   Animations
+---------------------------- */
+
+/* Fade In */
+@keyframes fadeIn {
+  0% { opacity: 0; transform: translateY(10px); }
+  100% { opacity: 1; transform: translateY(0); }
+}
+.animate-fadeIn {
+  animation: fadeIn 0.8s ease-out forwards;
+}
+
+/* Floating (for stat cards) */
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Shimmer (for skeleton loaders) */
+@keyframes shimmer {
+  100% { transform: translateX(100%); }
+}
+.animate-shimmer {
+  animation: shimmer 2s infinite;
+}
