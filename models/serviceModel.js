@@ -35,6 +35,13 @@ const serviceSchema = new mongoose.Schema(
     hasPricing: { type: Boolean, default: false },
     pricingOptions: [pricingSchema],
 
+    // NEW: material category
+    material: {
+      type: String,
+      enum: ["Steel", "Aluminium", "Wood", "All"],
+      default: "Aluminium",
+    },
+
     // availability
     isActive: { type: Boolean, default: true },
     avgLeadDays: { type: Number, default: 7 },
