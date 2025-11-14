@@ -7,17 +7,22 @@ import { AppContext } from "../../context/AppContext";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 const AddService = () => {
-  const [serviceImg, setServiceImg] = useState(null);
+  const [serviceImg, setServiceImg] = useState(null); // main image
+  const [gallery, setGallery] = useState([]); // NEW: gallery images
   const [name, setName] = useState("");
   const [categoryRef, setCategoryRef] = useState("");
   const [price, setPrice] = useState("");
   const [description, setDescription] = useState("");
   const [categories, setCategories] = useState([]);
 
+  // NEW: Material category state
+  const [material, setMaterial] = useState("Aluminium");
+
   const { backendUrl } = useContext(AppContext);
   const { aToken } = useContext(AdminContext);
 
   const fileInputRef = useRef(null);
+  const galleryInputRef = useRef(null);
   const queryClient = useQueryClient();
 
   // Fetch categories
@@ -54,11 +59,14 @@ const AddService = () => {
     onSuccess: (res) => {
       toast.success(res.data.message);
       setServiceImg(null);
+      setGallery([]);
       setName("");
       setCategoryRef(categories[0]?._id || "");
       setPrice("");
       setDescription("");
+      setMaterial("Aluminium"); // reset material
       if (fileInputRef.current) fileInputRef.current.value = "";
+      if (galleryInputRef.current) galleryInputRef.current.value = "";
       queryClient.invalidateQueries(["services"]);
     },
     onError: (error) => {
@@ -71,14 +79,16 @@ const AddService = () => {
     event.preventDefault();
 
     if (!serviceImg) {
-      return toast.error("Image Not Selected");
+      return toast.error("Main image not selected");
     }
 
     const formData = new FormData();
-    formData.append("image", serviceImg); // ✅ must match backend
+    formData.append("image", serviceImg); // ✅ main image
+    gallery.forEach((file) => formData.append("gallery", file)); // ✅ multiple gallery images
     formData.append("name", name);
     formData.append("categoryRef", categoryRef);
     formData.append("description", description);
+    formData.append("material", material);
     formData.append("hasPricing", "true");
     formData.append(
       "pricingOptions",
@@ -101,7 +111,7 @@ const AddService = () => {
       <p className="mb-3 text-lg font-medium">Add Service</p>
 
       <div className="bg-gray-900 px-8 py-8 border border-gray-700 rounded w-full max-w-4xl max-h-[80vh] overflow-y-scroll text-white">
-        {/* Image Upload */}
+        {/* Main Image Upload */}
         <div className="flex items-center gap-4 mb-8 text-gray-300">
           <label htmlFor="service-img">
             <img
@@ -121,7 +131,33 @@ const AddService = () => {
             id="service-img"
             hidden
           />
-          <p>Upload service image</p>
+          <p>Upload main service image</p>
+        </div>
+
+        {/* NEW: Gallery Upload */}
+        <div className="flex flex-col gap-2 mb-8 text-gray-300">
+          <p>Upload gallery images</p>
+          <input
+            ref={galleryInputRef}
+            onChange={(e) => {
+  const newFiles = Array.from(e.target.files);
+  setGallery((prev) => [...prev, ...newFiles]);
+}}
+            type="file"
+            id="gallery"
+            multiple
+            className="border border-gray-700 bg-gray-800 rounded px-2 py-2"
+          />
+          <div className="flex gap-2 flex-wrap mt-2">
+            {gallery.map((file, idx) => (
+              <img
+                key={idx}
+                src={URL.createObjectURL(file)}
+                alt="preview"
+                className="w-20 h-20 object-cover rounded"
+              />
+            ))}
+          </div>
         </div>
 
         {/* Form Fields */}
@@ -151,6 +187,22 @@ const AddService = () => {
                   {cat.name}
                 </option>
               ))}
+            </select>
+          </div>
+
+          {/* Material Category */}
+          <div className="flex flex-col gap-1">
+            <p>Material</p>
+            <select
+              onChange={(e) => setMaterial(e.target.value)}
+              value={material}
+              className="border border-gray-700 bg-gray-800 rounded px-2 py-2"
+              required
+            >
+              <option value="Steel">Steel</option>
+              <option value="Aluminium">Aluminium</option>
+              <option value="Wood">Wood</option>
+              <option value="All">All</option>
             </select>
           </div>
 
