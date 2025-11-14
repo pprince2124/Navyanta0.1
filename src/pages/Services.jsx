@@ -3,10 +3,10 @@ import { useLocation, useSearchParams, useNavigate } from "react-router-dom";
 import { useCategories } from "../hooks/useCategories";
 import { useServices } from "../hooks/useServices";
 import ServiceCardSkeleton from "../components/ui/ServiceCardSkeleton";
+import GalleryModal from "../components/ui/GalleryModal";
 import { AppContext } from "../context/AppContext";
 import axios from "axios";
 import { toast } from "react-toastify";
-// import assets from "../assets";
 
 const Services = () => {
   const location = useLocation();
@@ -14,48 +14,50 @@ const Services = () => {
   const navigate = useNavigate();
   const { backendUrl, token } = useContext(AppContext);
 
-  // Initial category from router state or query string
   const initialCategoryId =
     location.state?.categoryId || searchParams.get("categoryId") || null;
+  const initialMaterial = searchParams.get("material") || "All";
 
   const [selectedCategoryId, setSelectedCategoryId] = useState(initialCategoryId);
+  const [selectedMaterial, setSelectedMaterial] = useState(initialMaterial);
+  const materialOptions = ["All", "Steel", "Aluminium", "Wood"];
 
-  // Booking state
   const [bookingService, setBookingService] = useState(null);
   const [projectDate, setProjectDate] = useState("");
   const [slotTime, setSlotTime] = useState("");
   const [directPurchase, setDirectPurchase] = useState(false);
-
-  // Always required details
   const [address, setAddress] = useState("");
   const [contactNo, setContactNo] = useState("");
 
-  // Fetch categories
   const { data: categories, isLoading: catLoading } = useCategories();
-
-  // Fetch services filtered by category
   const { data, isLoading, isError } = useServices({
     categoryId: selectedCategoryId,
+    material: selectedMaterial,
   });
 
   const items = data?.items || [];
 
-  // Auto‑select first category if none chosen
+  // Gallery modal state
+  const [activeGallery, setActiveGallery] = useState([]);
+  const [showGalleryModal, setShowGalleryModal] = useState(false);
+  const [activeIndex, setActiveIndex] = useState(0);
+
   useEffect(() => {
     if (!selectedCategoryId && categories?.length > 0) {
       const firstId = categories[0]._id;
       setSelectedCategoryId(firstId);
-      setSearchParams({ categoryId: firstId });
+      setSearchParams({ categoryId: firstId, material: selectedMaterial });
     }
-  }, [categories, selectedCategoryId, setSearchParams]);
+  }, [categories, selectedCategoryId, selectedMaterial, setSearchParams]);
 
-  // Handle booking submit
+  useEffect(() => {
+    document.body.style.overflow = showGalleryModal ? "hidden" : "auto";
+  }, [showGalleryModal]);
+
   const handleBookProject = async (e) => {
     e.preventDefault();
-    if (!bookingService) {
-      toast.error("No service selected");
-      return;
-    }
+    if (!bookingService) return toast.error("No service selected");
+
     try {
       const payload = {
         serviceRef: bookingService._id,
@@ -69,7 +71,7 @@ const Services = () => {
       const { data } = await axios.post(
         `${backendUrl}/api/user/projects/book`,
         payload,
-        { headers: { Authorization: `Bearer ${token}` } } // ✅ fixed header
+        { headers: { Authorization: `Bearer ${token}` } }
       );
 
       if (data.success) {
@@ -104,7 +106,7 @@ const Services = () => {
                 <button
                   onClick={() => {
                     setSelectedCategoryId(cat._id);
-                    setSearchParams({ categoryId: cat._id });
+                    setSearchParams({ categoryId: cat._id, material: selectedMaterial });
                   }}
                   aria-current={selectedCategoryId === cat._id ? "true" : undefined}
                   className={`w-full text-left px-3 py-2 rounded-md ${
@@ -125,9 +127,28 @@ const Services = () => {
       <main className="flex-1">
         <div className="mb-6">
           <h1 className="text-2xl font-bold">
-            {categories?.find((c) => c._id === selectedCategoryId)?.name ||
-              "Select a Category"}
+            {categories?.find((c) => c._id === selectedCategoryId)?.name || "Select a Category"}
           </h1>
+        </div>
+
+        {/* Material filter buttons */}
+        <div className="mb-6 flex gap-2">
+          {materialOptions.map((mat) => (
+            <button
+              key={mat}
+              onClick={() => {
+                setSelectedMaterial(mat);
+                setSearchParams({ categoryId: selectedCategoryId, material: mat });
+              }}
+              className={`px-3 py-1 rounded-md border ${
+                selectedMaterial === mat
+                  ? "bg-black text-white"
+                  : "bg-white text-gray-700 hover:bg-gray-100"
+              }`}
+            >
+              {mat}
+            </button>
+          ))}
         </div>
 
         {isLoading && (
@@ -160,7 +181,7 @@ const Services = () => {
                     <div className="relative h-40 w-full overflow-hidden rounded-md bg-gray-50">
                       {service.image ? (
                         <img
-                          src={`${backendUrl}${service.image}`} // ✅ use backendUrl
+                          src={`${backendUrl}${service.image}`}
                           alt={service.name}
                           className="h-full w-full object-cover"
                         />
@@ -171,18 +192,29 @@ const Services = () => {
                       )}
                     </div>
                     <div className="mt-3">
-                      <h3 className="text-base font-semibold text-gray-900">
-                        {service.name}
-                      </h3>
+                      <h3 className="text-base font-semibold text-gray-900">{service.name}</h3>
                       <p className="mt-1 text-sm text-gray-600 line-clamp-2">
                         {service.shortDescription}
                       </p>
+                      <p className="mt-1 text-xs text-gray-500">Material: {service.material}</p>
                       <button
                         onClick={() => setBookingService(service)}
                         className="mt-3 w-full rounded-md bg-black py-2 text-sm font-medium text-white hover:bg-gray-800"
                       >
                         Book Project
                       </button>
+                      {service.gallery?.length > 0 && (
+                        <button
+                          onClick={() => {
+                            setActiveGallery(service.gallery);
+                            setActiveIndex(0);
+                            setShowGalleryModal(true);
+                          }}
+                          className="mt-2 w-full rounded-md border border-gray-300 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        >
+                          View Gallery
+                        </button>
+                      )}
                     </div>
                   </div>
                 ))}
@@ -191,8 +223,15 @@ const Services = () => {
           </>
         )}
 
-       
-        {/* Inline booking modal/form */}
+        {/* Gallery Modal */}
+        {showGalleryModal && (
+          <GalleryModal
+            images={activeGallery.map((img) => `${backendUrl}${img}`)}
+            activeIndex={activeIndex}
+            onClose={() => setShowGalleryModal(false)}
+          />
+        )}
+      
        
                  {/* Inline booking modal/form */}
         {bookingService && (
